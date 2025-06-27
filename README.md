@@ -2,6 +2,96 @@
 
 A basic implementation of persistent memory using a local knowledge graph. This lets Claude remember information about the user across chats. This version has been enhanced with `fuse.js` to provide fuzzy, semantic searching capabilities.
 
+## Instruction prompt. (Add this to your CLAUDE.md or any other related)
+```
+Here is an instruction guide for each tool, focusing on best practices for using the knowledge graph effectively.
+
+### A Guide to Using Knowledge Graph Memory
+
+This guide outlines best practices for interacting with your knowledge graph memory. Following these principles will help you build a clean, accurate, and useful memory over time. The core idea is to first **search** for what you know, then **act** to add, update, or remove information.
+
+---
+
+#### **`search_nodes`**
+
+This is your primary tool for discovery. It performs a fuzzy search across all entity names, types, and observations to find relevant information.
+
+*   **Best Practice:** Always search before you create. To avoid creating duplicate entities (e.g., "Jane_Doe" when "Jane_Doe_Dev" already exists), start with a broad search to see what the graph already knows.
+*   **Invocation Tip:** Use conceptual queries. You don't need an exact name. A query like "project manager who likes dogs" will effectively search observations across all entities to find the best match. Review the returned `score` to understand the confidence of the match.
+
+---
+
+#### **`create_entities`**
+
+Use this to establish a new person, place, organization, or concept as a node in your graph.
+
+*   **Storage Tip:** Choose a consistent and unique `name` for each entity (e.g., `FirstName_LastName`, `Project_Name`). This name is the permanent identifier.
+*   **Invocation Tip:** Create entities with a few core `observations` from the start. An entity is more useful when it's created with initial facts, such as "is a software engineer" or "founded in 2021".
+
+---
+
+#### **`add_observations`**
+
+Use this to add new facts or attributes to an entity that already exists.
+
+*   **Storage Tip:** Keep observations atomic. Each observation should represent a single, discrete fact (e.g., use "Loves hiking" and "Lives in Colorado" as two separate observations, not one). This makes information easier to manage and remove later.
+*   **Invocation Tip:** This tool is for enriching existing entities. It will not add duplicate observations, so you can safely call it with a list of facts without worrying about creating redundant entries.
+
+---
+
+#### **`create_relations`**
+
+This tool connects two existing entities with a directed, active-voice relationship (e.g., `Jane_Doe` -> `reports_to` -> `John_Smith`).
+
+*   **Storage Tip:** Ensure both the `from` and `to` entities already exist before creating a relation between them. A relation is meaningless without its nodes.
+*   **Invocation Tip:** Use a consistent vocabulary for `relationType` (e.g., always use `works_at`, not a mix of `works_at` and `employed_by`). This makes the graph structure predictable and easier to query.
+
+---
+
+#### **`open_nodes`**
+
+Use this to retrieve one or more entities by their exact name, along with any relations that exist between them.
+
+*   **Best Practice:** Use this when you know the exact name of an entity and want to see its details and local connections. It's more precise than `search_nodes` for targeted lookups.
+*   **Invocation Tip:** Before updating or deleting, use `open_nodes` to inspect the entity and its relationships. This helps confirm you are targeting the correct information.
+
+---
+
+#### **`delete_observations`**
+
+This tool removes specific facts from an entity.
+
+*   **Best Practice:** This is the standard way to update an entity when a fact is no longer true (e.g., removing "is learning Spanish" after proficiency is achieved).
+*   **Invocation Tip:** You must provide the *exact* text of the observation to be deleted. Use `open_nodes` first to retrieve the exact phrasing if you are unsure.
+
+---
+
+#### **`delete_relations`**
+
+This tool removes a specific connection between two entities, leaving the entities themselves intact.
+
+*   **Best Practice:** Use this to update the graph when a relationship changes. For example, if a person moves to a new team, you would delete their old `reports_to` relation.
+*   **Invocation Tip:** To be successful, the call must exactly match the `from` entity, `to` entity, and `relationType` of the stored relation.
+
+---
+
+#### **`delete_entities`**
+
+This is a destructive action that permanently removes an entity and all relations connected to it.
+
+*   **Best Practice:** Be certain before using this tool. Deleting an entity causes a cascading delete of all its connections. If you only want to remove an incorrect fact, use `delete_observations` instead.
+*   **Invocation Tip:** The tool will not fail if the entity doesn't exist, so you don't need to check for its existence before calling.
+
+---
+
+#### **`read_graph`**
+
+This tool retrieves the entire knowledge graph—every entity and every relation.
+
+*   **Best Practice:** Use this tool sparingly, as it can return a very large amount of data. It is best suited for offline analysis, debugging, or getting a complete overview of your memory.
+*   **Invocation Tip:** For nearly all interactive tasks, prefer the more focused `search_nodes` or `open_nodes` tools for better performance and relevance.
+```
+
 ## Core Concepts
 
 ### Entities
