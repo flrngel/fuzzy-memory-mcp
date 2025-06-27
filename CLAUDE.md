@@ -34,6 +34,6 @@ The codebase consists of a single TypeScript file (`index.ts`) that implements:
 ## Important Notes
 
 - The package name was changed from `flrngel/fuzzy-memory-mcp` to `@flrngel/fuzzy-memory-mcp` to follow npm's scoped package naming convention
-- Despite the repository name mentioning "fuzzy" search, the current implementation uses basic string matching (`.includes()`) rather than the fuse.js library that's installed as a dependency
+- The server implements fuzzy search using the fuse.js library with configurable threshold and matching parameters
 - The server runs on stdio and is designed to be used with Claude Desktop or other MCP clients
 - TypeScript configuration targets ES2022 with ESNext modules for modern JavaScript features

@@ -2,8 +2,6 @@
 
 A basic implementation of persistent memory using a local knowledge graph. This lets Claude remember information about the user across chats. This version has been enhanced with `fuse.js` to provide fuzzy, semantic searching capabilities.
 
-> **Note**: The fuzzy search functionality using fuse.js is not yet implemented in the current version. The search currently uses basic string matching.
-
 ## Core Concepts
 
 ### Entities
@@ -111,13 +109,19 @@ Example:
   - Returns complete graph structure with all entities and relations
 
 - **search_nodes**
-  - Performs a fuzzy semantic search for nodes in the knowledge graph based on a query.
+  - Performs a fuzzy semantic search for nodes in the knowledge graph using Fuse.js
   - Input: `query` (string)
   - Searches across:
     - Entity names
     - Entity types
     - Observation content
-  - Returns an array of search results. Each result contains the matched `entity` and a `score` (a confidence value from 0.0 to 1.0, where higher is better).
+  - Returns an array of search results, each containing:
+    - `entity`: The matched entity object
+    - `score`: Confidence score from 0.0 to 1.0 (higher is better)
+  - Uses fuzzy matching with:
+    - Threshold: 0.6 (0.0 = perfect match, 1.0 = matches anything)
+    - Minimum match character length: 2
+    - Location-independent matching
 
 - **open_nodes**
   - Retrieve specific nodes by name
