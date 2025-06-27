@@ -9,6 +9,9 @@ import {
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// This tool now uses Fuse.js for fuzzy searching.
+// Please install it by running: npm install fuse.js
+import Fuse from 'fuse.js';
 
 // Define memory file path using environment variable with fallback
 const defaultMemoryPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'memory.json');
@@ -36,6 +39,12 @@ interface Relation {
 interface KnowledgeGraph {
   entities: Entity[];
   relations: Relation[];
+}
+
+// Interface for a search result, including the entity and a confidence score
+interface SearchResult {
+  entity: Entity;
+  score: number; // A confidence score from 0.0 to 1.0 (higher is better)
 }
 
 // The KnowledgeGraphManager class contains all operations to interact with the knowledge graph
@@ -133,31 +142,32 @@ class KnowledgeGraphManager {
     return this.loadGraph();
   }
 
-  // Very basic search function
-  async searchNodes(query: string): Promise<KnowledgeGraph> {
+  // Fuzzy search function using Fuse.js, returning candidates with confidence scores.
+  async searchNodes(query: string): Promise<SearchResult[]> {
     const graph = await this.loadGraph();
-    
-    // Filter entities
-    const filteredEntities = graph.entities.filter(e => 
-      e.name.toLowerCase().includes(query.toLowerCase()) ||
-      e.entityType.toLowerCase().includes(query.toLowerCase()) ||
-      e.observations.some(o => o.toLowerCase().includes(query.toLowerCase()))
-    );
+    if (graph.entities.length === 0) {
+      return [];
+    }
   
-    // Create a Set of filtered entity names for quick lookup
-    const filteredEntityNames = new Set(filteredEntities.map(e => e.name));
+    const fuse = new Fuse(graph.entities, {
+      keys: ['name', 'entityType', 'observations'],
+      includeScore: true,
+      threshold: 0.6, // 0.0 is a perfect match, 1.0 matches anything.
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
   
-    // Filter relations to only include those between filtered entities
-    const filteredRelations = graph.relations.filter(r => 
-      filteredEntityNames.has(r.from) && filteredEntityNames.has(r.to)
-    );
+    const results = fuse.search(query);
   
-    const filteredGraph: KnowledgeGraph = {
-      entities: filteredEntities,
-      relations: filteredRelations,
-    };
+    // Map Fuse's results to our SearchResult interface.
+    // Fuse's score is 0 for a perfect match and 1 for a complete mismatch.
+    // We invert it to create a more intuitive "confidence score" where higher is better.
+    const formattedResults: SearchResult[] = results.map(result => ({
+      entity: result.item,
+      score: 1 - result.score!,
+    }));
   
-    return filteredGraph;
+    return formattedResults;
   }
 
   async openNodes(names: string[]): Promise<KnowledgeGraph> {
@@ -345,11 +355,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "search_nodes",
-        description: "Search for nodes in the knowledge graph based on a query",
+        description: "Performs a fuzzy semantic search for nodes in the knowledge graph based on a query. Returns a list of matching entities, each with a confidence score from 0.0 to 1.0 (higher is better).",
         inputSchema: {
           type: "object",
           properties: {
-            query: { type: "string", description: "The search query to match against entity names, types, and observation content" },
+            query: { type: "string", description: "The search query to match against entity names, types, and observation content." },
           },
           required: ["query"],
         },
