@@ -1,5 +1,5 @@
 {
-  "name": "flrngel/fuzzy-memory-mcp",
+  "name": "@flrngel/fuzzy-memory-mcp",
   "version": "0.6.3+1",
   "description": "MCP server for enabling memory for Claude through a knowledge graph",
   "license": "MIT",
